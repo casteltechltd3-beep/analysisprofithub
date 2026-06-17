@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { X, Brain, Zap, ChevronDown, ChevronUp, Loader2, TrendingUp, Target, Activity, RefreshCw } from "lucide-react"
+import { X, Cpu, Zap, ChevronDown, ChevronUp, Loader2, TrendingUp, Target, Activity, RefreshCw } from "lucide-react"
 import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
 import { AnalysisEngine } from "@/lib/analysis-engine"
 import { useUnifiedEngine } from "@/hooks/use-unified-engine"
@@ -310,17 +310,17 @@ export function FloatingAIScanner({
 
   return (
     <div 
-      className="fixed z-[60]"
-      style={!isOpen ? { bottom: "24px", right: "88px" } : { left: `${position.x}px`, top: `${position.y}px` }}
+      className="fixed z-[9999]"
+      style={!isOpen ? { bottom: "24px", right: "24px" } : { left: `${position.x}px`, top: `${position.y}px` }}
     >
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          title="Open AI Market Scanner"
-          className="rounded-full w-16 h-16 flex items-center justify-center shadow-2xl bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 border border-violet-400/30 transition-all hover:scale-110 active:scale-95"
-          style={{ boxShadow: "0 0 30px rgba(124,58,237,.5)" }}
+          title="Open Pro AI Scanner"
+          className="rounded-full w-16 h-16 flex items-center justify-center shadow-2xl bg-gradient-to-br from-cyan-500 to-fuchsia-500 hover:from-cyan-400 hover:to-fuchsia-400 border border-cyan-300/40 transition-all hover:scale-110 active:scale-95"
+          style={{ boxShadow: "0 0 30px rgba(34,211,238,0.5), 0 0 16px rgba(236,72,153,0.35)" }}
         >
-          <Brain className="w-7 h-7 text-white" />
+          <Cpu className="w-7 h-7 text-white animate-pulse" />
         </button>
       ) : (
         <Card 
@@ -340,8 +340,8 @@ export function FloatingAIScanner({
             className={`px-4 py-3 flex items-center justify-between border-b cursor-move select-none ${dark ? "border-white/5 bg-gradient-to-r from-violet-600/15 to-indigo-600/10" : "border-gray-200 bg-purple-50"}`}
           >
             <div className="flex items-center gap-2">
-              <Brain className={`w-4 h-4 ${dark ? "text-violet-400" : "text-violet-600"}`} />
-              <span className="text-xs font-black uppercase tracking-widest">AI Market Scanner</span>
+              <Cpu className={`w-4 h-4 ${dark ? "text-cyan-300" : "text-fuchsia-500"}`} />
+              <span className="text-xs font-black uppercase tracking-widest">Pro AI Scanner</span>
               {results.length > 0 && !isScanning && (
                 <Badge className="text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-400 border-emerald-500/30 px-2 py-0">
                   {results.filter(r => r.signal === "TRADE NOW").length} Signals
