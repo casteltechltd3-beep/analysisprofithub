@@ -275,10 +275,15 @@ export function FloatingAIScanner({
     }
   }
 
-  // Filter available symbols to only continuous volatility indices
-  const continuousSymbols = availableSymbols.filter(s => 
-    s.symbol.startsWith("R_") || s.symbol.startsWith("1HZ")
-  )
+  // Filter available symbols to only continuous volatility indices,
+  // excluding the legacy 15s, 30s, and 90s 1Hz markets.
+  const continuousSymbols = availableSymbols.filter((s) => {
+    const symbol = s.symbol.toUpperCase()
+    return (
+      symbol.startsWith("R_") ||
+      (symbol.startsWith("1HZ") && !["1HZ15V", "1HZ30V", "1HZ90V"].includes(symbol))
+    )
+  })
 
   const toggleMarket   = (sym: string) =>
     setSelected(p => p.includes(sym) ? p.filter(s => s !== sym) : [...p, sym])
@@ -355,12 +360,14 @@ export function FloatingAIScanner({
         <button
           onPointerDown={handlePointerDown}
           title="Open Pro AI Scanner"
-          className="relative rounded-full w-20 h-20 flex items-center justify-center shadow-[0_0_40px_rgba(249,115,22,0.35)] bg-gradient-to-br from-orange-400 via-rose-500 to-yellow-400 border border-orange-300/40 transition-all hover:scale-[1.05] active:scale-95"
+          className="relative rounded-full w-20 h-20 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.35)] bg-gradient-to-br from-indigo-500 via-cyan-500 to-fuchsia-500 border border-cyan-300/30 transition-all hover:scale-[1.05] active:scale-95"
           style={{
-            boxShadow: "0 0 30px rgba(249,115,22,0.45), 0 0 18px rgba(251,191,36,0.25)",
+            boxShadow: "0 0 30px rgba(79,70,229,0.45), 0 0 18px rgba(59,130,246,0.25)",
           }}
         >
           <span className="absolute inset-0 rounded-full bg-white/10 blur-xl opacity-80" />
+          <span className="absolute inset-0 rounded-full border border-cyan-300/40 opacity-70 animate-ping" />
+          <span className="absolute inset-1 rounded-full border border-fuchsia-300/40 opacity-50 animate-pulse" />
           <span className="relative flex items-center justify-center w-full h-full rounded-full text-xs font-black tracking-[0.35em] text-white uppercase">
             AI
           </span>
@@ -380,7 +387,7 @@ export function FloatingAIScanner({
           {/* ── Header ── */}
           <div 
             onMouseDown={handleMouseDown}
-            className={`px-4 py-3 flex items-center justify-between border-b cursor-move select-none ${dark ? "border-white/5 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/15" : "border-gray-200 bg-gradient-to-r from-orange-50 to-pink-50"}`}
+            className={`px-4 py-3 flex items-center justify-between border-b cursor-move select-none ${dark ? "border-white/5 bg-gradient-to-r from-indigo-500/10 via-cyan-500/15 to-fuchsia-500/10" : "border-gray-200 bg-gradient-to-r from-slate-50 to-violet-50"}`}
           >
             <div className="flex items-center gap-2">
               <Cpu className={`w-4 h-4 ${dark ? "text-cyan-300" : "text-fuchsia-500"}`} />
