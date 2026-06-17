@@ -305,7 +305,11 @@ export class DerivAPIClient {
     }
   }
 
-  async getActiveSymbols(): Promise<ActiveSymbol[]> {
+  async getActiveSymbols(forceRefresh = false): Promise<ActiveSymbol[]> {
+    return this.manager.getActiveSymbols(forceRefresh)
+  }
+
+  async getActiveSymbolsLegacy(): Promise<ActiveSymbol[]> {
     const request: any = { active_symbols: "brief" }
     const response = await this.send(request)
     const mapped: ActiveSymbol[] = response.active_symbols.map((s: any) => ({

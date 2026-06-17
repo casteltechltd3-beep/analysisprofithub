@@ -1152,7 +1152,12 @@ export class DerivWebSocketManager {
 
   // ─── Active symbols ────────────────────────────────────────────────────────
 
-  public async getActiveSymbols(): Promise<Array<{ symbol: string; display_name: string; market?: string; market_display_name?: string }>> {
+  public async getActiveSymbols(forceRefresh = false): Promise<Array<{ symbol: string; display_name: string; market?: string; market_display_name?: string }>> {
+    if (forceRefresh) {
+      this.symbolsCache = null
+      this.symbolsPromise = null
+    }
+
     if (this.symbolsCache) return this.symbolsCache
     if (this.symbolsPromise) return this.symbolsPromise
 

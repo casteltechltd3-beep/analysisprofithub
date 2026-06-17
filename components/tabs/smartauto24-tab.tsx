@@ -74,7 +74,7 @@ export function SmartAuto24Tab({
     token
   } = useDerivAPI()
 
-  const [allMarkets, setAllMarkets] = useState<Array<{ symbol: string; display_name: string }>>([])
+  const [allMarkets, setAllMarkets] = useState<Array<{ symbol: string; display_name: string; market?: string; market_display_name?: string }>>([])
   const [loadingMarkets, setLoadingMarkets] = useState(true)
 
   // Configuration state
@@ -178,6 +178,7 @@ export function SmartAuto24Tab({
   const entryPointMetRef = useRef(false)
   const selectedStrategyRef = useRef("Even/Odd")
   const analysisRef = useRef<any>(null)
+  const lastEvenOddBiasRef = useRef<"EVEN" | "ODD" | null>(null)
   const consecutiveEvenCountRef = useRef(0)
   const consecutiveOddCountRef = useRef(0)
   const lastDigitRef = useRef<number | null>(null)
@@ -212,12 +213,12 @@ export function SmartAuto24Tab({
   useEffect(() => { marketScoresRef.current = marketScores }, [marketScores])
 
   useEffect(() => {
-    if (!apiClient || !isConnected || !isAuthorized) return
+    if (!apiClient || !isConnected) return
 
     const loadMarkets = async () => {
       try {
         setLoadingMarkets(true)
-        const symbols = await apiClient.getActiveSymbols()
+        const symbols = await apiClient.getActiveSymbols(true)
         setAllMarkets(symbols)
         console.log("[v0] Loaded all markets:", symbols.length)
       } catch (error) {
@@ -368,6 +369,39 @@ export function SmartAuto24Tab({
     ])
   }
 
+  const getEvenOddBiasFromRecommendation = (recommendation: string | undefined) => {
+    if (!recommendation) return null
+    const normalized = recommendation.toUpperCase()
+    if (normalized.includes("EVEN")) return "EVEN"
+    if (normalized.includes("ODD")) return "ODD"
+    return null
+  }
+
+  const getApprovedOverUnderBarrier = (analysis: any, signalCode: string) => {
+    const allowedOver = ["1", "2", "3"]
+    const allowedUnder = ["6", "7", "8"]
+    const normalizedSignal = String(signalCode || "").toUpperCase()
+
+    if (normalizedSignal.includes("OVER")) {
+      const barrier = analysis.targetDigit?.toString()
+        || (analysis.description?.includes("Over 3") ? "3"
+          : analysis.description?.includes("Over 2") ? "2"
+          : analysis.description?.includes("Over 1") ? "1"
+          : undefined)
+      return allowedOver.includes(barrier) ? barrier : undefined
+    }
+
+    if (normalizedSignal.includes("UNDER")) {
+      const barrier = analysis.targetDigit?.toString()
+        || (analysis.description?.includes("Under 6") ? "6"
+          : analysis.description?.includes("Under 7") ? "7"
+          : analysis.description?.includes("Under 8") ? "8"
+          : undefined)
+      return allowedUnder.includes(barrier) ? barrier : undefined
+    }
+
+    return undefined
+  }
 
   const handleStartTrading = async () => {
     if (!isLoggedIn || !apiClient || !isConnected) {
@@ -388,13 +422,12 @@ export function SmartAuto24Tab({
     setDiffersSelectedDigit(null)
     setDiffersWaitingForEntry(false)
     setDiffersTicksSinceAppearance(0)
+    lastEvenOddBiasRef.current = null
 
     addAnalysisLog(`Automated scanning started on ${symbol}. Waiting for High-Probability Signal...`, "info")
 
-    // Initialize trader
-    if (!traderRef.current) {
-      traderRef.current = new DerivRealTrader(apiClient)
-    }
+    // Initialize trader fresh for each trading session to avoid stale state
+    traderRef.current = new DerivRealTrader(apiClient)
 
     // Check for immediate signals
     checkInstantSignals()
@@ -441,17 +474,33 @@ export function SmartAuto24Tab({
           "matches": "Matches"
         }
         const strategyName = typeToStrat[bestSignal.type] || "Even/Odd"
+        const evenOddBias = getEvenOddBiasFromRecommendation(bestSignal.recommendation)
+
+        if (strategyName === "Even/Odd" && evenOddBias && lastEvenOddBiasRef.current && lastEvenOddBiasRef.current !== evenOddBias) {
+          addAnalysisLog(`Even/Odd bias switched from ${lastEvenOddBiasRef.current} to ${evenOddBias} as the market's strongest probability moved.`, "info")
+        }
+
+        if (strategyName === "Even/Odd" && evenOddBias) {
+          lastEvenOddBiasRef.current = evenOddBias
+        }
 
         addAnalysisLog(`High Probability Signal Detected: ${strategyName} (${bestSignal.probability.toFixed(1)}%)`, "success")
 
         // Determine exact signal code (EVEN, ODD, OVER, UNDER, etc.)
-        let analysisCode = "DIGIT"
+        let analysisCode = ""
         if (bestSignal.recommendation?.includes("EVEN")) analysisCode = "EVEN"
-        if (bestSignal.recommendation?.includes("ODD")) analysisCode = "ODD"
-        if (bestSignal.recommendation?.includes("OVER")) analysisCode = "OVER"
-        if (bestSignal.recommendation?.includes("UNDER")) analysisCode = "UNDER"
-        if (bestSignal.recommendation?.includes("DIFFER")) analysisCode = "DIFFERS"
-        if (bestSignal.recommendation?.includes("MATCH")) analysisCode = "MATCH"
+        else if (bestSignal.recommendation?.includes("ODD")) analysisCode = "ODD"
+        else if (bestSignal.recommendation?.includes("OVER")) analysisCode = "OVER"
+        else if (bestSignal.recommendation?.includes("UNDER")) analysisCode = "UNDER"
+        else if (bestSignal.recommendation?.includes("DIFFER")) analysisCode = "DIFFERS"
+        else if (bestSignal.recommendation?.includes("MATCH")) analysisCode = "MATCH"
+        else if (strategyName === "Differs") analysisCode = "DIFFERS"
+        else if (strategyName === "Matches") analysisCode = "MATCH"
+
+        if (!analysisCode) {
+          addAnalysisLog(`Unable to determine trade signal from recommendation: ${bestSignal.recommendation}`, "warning")
+          return
+        }
 
         handleSelectInstantSuggestion({
           strategy: strategyName,
@@ -467,9 +516,7 @@ export function SmartAuto24Tab({
   const handleSelectInstantSuggestion = (signal: any) => {
     const strategyName = signal.strategy
     setSelectedStrategy(strategyName)
-    addAnalysisLog(`Executing ${strategyName} on ${symbol}... Prediction Details: ${signal.type} ${signal.barrier !== undefined ? signal.barrier : ''}`, "info")
-
-    let analysisSignalCode = signal.type
+    selectedStrategyRef.current = strategyName
 
     if (strategyName === "Differs") {
       setDiffersSelectedDigit(Number(signal.barrier))
@@ -477,6 +524,8 @@ export function SmartAuto24Tab({
       setDiffersTicksSinceAppearance(0)
       addAnalysisLog(`Waiting for digit ${signal.barrier} to disappear for 3 consecutive ticks...`, "warning")
     }
+
+    const analysisSignalCode = String(signal.type || "").toUpperCase()
 
     const executionAnalysis = {
       strategy: strategyName,
@@ -516,6 +565,7 @@ export function SmartAuto24Tab({
     const strategyName = strategyMap[signal.type]
     if (strategyName) {
       setSelectedStrategy(strategyName)
+      selectedStrategyRef.current = strategyName
       addAnalysisLog(`Selected suggestion: ${strategyName}. Configuring bot parameters...`, "info")
 
       // Special setup for specific strategies
@@ -581,26 +631,40 @@ export function SmartAuto24Tab({
       let contractType: string
       let barrier: string | undefined = undefined
 
-      const strat = selectedStrategyRef.current
+      const strat = analysis.strategy || selectedStrategyRef.current
+      const signalCode = String(analysis.signal || "").toUpperCase()
 
-      if (strat === "Differs" && differsSelectedDigitRef.current !== null) {
+      if (strat === "Differs") {
         contractType = "DIGITDIFF"
-        barrier = differsSelectedDigitRef.current.toString()
+        barrier = analysis.targetDigit?.toString() || differsSelectedDigitRef.current?.toString()
       } else if (strat === "Even/Odd") {
-        contractType = analysis.signal === "EVEN" ? "DIGITEVEN" : "DIGITODD"
+        contractType = signalCode === "EVEN" ? "DIGITEVEN" : "DIGITODD"
       } else if (strat === "Over/Under") {
-        const isOver = analysis.signal === "OVER" || analysis.signal.includes("OVER")
+        const isOver = signalCode === "OVER" || signalCode.includes("OVER")
         contractType = isOver ? "DIGITOVER" : "DIGITUNDER"
-        if (isOver) {
-          barrier = analysis.description.includes("Over 3") ? "3" : (analysis.description.includes("Over 2") ? "2" : "1")
-        } else {
-          barrier = analysis.description.includes("Under 6") ? "6" : (analysis.description.includes("Under 7") ? "7" : "8")
-        }
+        barrier = getApprovedOverUnderBarrier(analysis, signalCode)
+      } else if (strat === "Matches") {
+        contractType = "DIGITMATCH"
+        barrier = analysis.targetDigit?.toString()
       } else {
         contractType = "DIGITMATCH"
         barrier = analysis.targetDigit?.toString()
       }
 
+      if ((contractType === "DIGITOVER" || contractType === "DIGITUNDER") && !barrier) {
+        barrier = contractType === "DIGITOVER" ? "1" : "8"
+        console.warn("[v0] performTrade: defaulting barrier for over/under contract", contractType, barrier)
+      }
+
+      if ((contractType === "DIGITDIFF" || contractType === "DIGITMATCH") && !barrier) {
+        addAnalysisLog(`Trade skipped: missing barrier for ${contractType}.`, "warning")
+        console.warn("[v0] performTrade: missing barrier for contract type", contractType, analysis)
+        isExecutingTradeRef.current = false
+        entryPointMetRef.current = false
+        return
+      }
+
+      console.log("[v0] SmartAuto24 performing trade", { strat, contractType, barrier, analysis })
       const currentLosses = contractsLostRef.current
 
       const martingaleMultiplier = martingaleRatios[strat] || 2.0

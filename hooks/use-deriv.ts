@@ -82,7 +82,7 @@ export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
 
         // Get available symbols with fallback
         try {
-          const symbols = await wsRef.current.getActiveSymbols()
+          const symbols = await wsRef.current.getActiveSymbols(true)
           if (symbols && symbols.length > 0) {
             const filteredSymbols = symbols.filter(s => {
               const market = (s.market || "").toUpperCase();

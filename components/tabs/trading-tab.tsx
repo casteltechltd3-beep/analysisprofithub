@@ -104,7 +104,7 @@ export function TradingTab({ theme: propTheme, symbol, onSymbolChange }: Trading
     try {
       setLoadingMarkets(true)
       setMarketError(null)
-      const symbols = await apiClient.getActiveSymbols()
+      const symbols = await apiClient.getActiveSymbols(true)
 
       if (!symbols || symbols.length === 0) {
         setMarketError("No markets available")

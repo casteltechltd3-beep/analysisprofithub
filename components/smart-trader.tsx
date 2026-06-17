@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Play, AlertCircle } from "lucide-react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
-import { getCachedMarkets, setCachedMarkets } from "@/lib/market-cache"
+import { clearMarketCache, getCachedMarkets, setCachedMarkets } from "@/lib/market-cache"
 
 interface ManualTradeLog {
   id: string
@@ -60,17 +60,23 @@ export function SmartTrader({ theme = "dark", currency = "USD" }: SmartTraderPro
 
   const loadMarkets = async () => {
     try {
-      // Try to load from cache first
+      // Use cached markets for fast UI render, but always refresh from API to pick up new symbols.
       const cached = getCachedMarkets()
       if (cached && cached.length > 0) {
         setMarkets(cached)
-        return
       }
 
-      // Fetch from API if not cached
       if (!apiClient) return
-      const symbols = await apiClient.getActiveSymbols()
-      const volatilityMarkets = symbols.filter((s) => s.market === "synthetic_index" && s.symbol.startsWith("R_"))
+      const symbols = await apiClient.getActiveSymbols(true)
+      const volatilityMarkets = symbols.filter((s) => {
+        const symbol = (s.symbol || "").toUpperCase()
+        const market = (s.market || "").toLowerCase()
+
+        return (
+          market === "synthetic_index" &&
+          (symbol.startsWith("R_") || symbol.startsWith("1HZ"))
+        )
+      })
       setMarkets(volatilityMarkets)
       setCachedMarkets(volatilityMarkets)
     } catch (error) {
