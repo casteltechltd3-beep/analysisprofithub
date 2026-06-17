@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { X, Brain, Zap, ChevronDown, ChevronUp, Loader2, TrendingUp, Target, Activity, RefreshCw } from "lucide-react"
 import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
 import { AnalysisEngine } from "@/lib/analysis-engine"
+import { useUnifiedEngine } from "@/hooks/use-unified-engine"
+import type { BotSignal } from "@/lib/core-analytics-engine"
 
 interface FloatingAIScannerProps {
   theme?: "light" | "dark"
@@ -136,6 +138,7 @@ export function FloatingAIScanner({
   const [results,       setResults]       = useState<ScanResult[]>([])
   const [error,         setError]         = useState<string | null>(null)
   const abortRef = useRef(false)
+  const { executeTrade } = useUnifiedEngine()
 
   // Dragging and position state
   const [position, setPosition] = useState({ x: 100, y: 100 })
@@ -186,6 +189,53 @@ export function FloatingAIScanner({
       window.removeEventListener("mouseup", handleMouseUp)
     }
   }, [isDragging])
+
+  const mapScanResultToSignal = (result: ScanResult): BotSignal => {
+    const action = result.signal === "TRADE NOW" ? "trade" : result.signal === "WAIT" ? "wait" : "skip"
+    let prediction: number | number[] = result.targetDigit ?? 0
+
+    switch (result.strategy) {
+      case "even_odd":
+        prediction = result.direction === "ODD" ? 1 : 0
+        break
+      case "over_under":
+        prediction = result.targetDigit ?? (result.direction.startsWith("OVER") ? 7 : 3)
+        break
+      case "matches":
+      case "differs":
+        prediction = result.targetDigit ?? Number(result.direction.match(/\d+/)?.[0] ?? 0)
+        break
+    }
+
+    return {
+      botType: result.strategy as BotSignal['botType'],
+      action,
+      prediction,
+      confidence: result.confidence,
+      reason: `AI scanner ${result.signal} for ${result.strategy}`,
+      powerThreshold: result.confidence >= 55,
+      trendCondition: true,
+    }
+  }
+
+  const executeScanResults = (scanResults: ScanResult[]) => {
+    if (!executeTrade) return
+
+    const trades = scanResults
+      .filter(r => r.signal === "TRADE NOW")
+      .map(result => {
+        const signal = mapScanResultToSignal(result)
+        const trade = executeTrade(result.strategy, signal)
+        if (trade) {
+          console.log("[v0] Floating AI Scanner executed trade:", trade)
+        }
+        return trade
+      })
+
+    if (trades.some(Boolean)) {
+      console.log(`[v0] Floating AI Scanner triggered ${trades.filter(Boolean).length} trade(s)`)
+    }
+  }
 
   // Filter available symbols to only continuous volatility indices
   const continuousSymbols = availableSymbols.filter(s => 
@@ -248,7 +298,8 @@ export function FloatingAIScanner({
     setProgressLabel(`Done — ${collected.length} markets analysed`)
     setIsScanning(false)
     if (onScanComplete) onScanComplete(collected)
-  }, [selected, selStrats, availableSymbols, onScanComplete])
+    executeScanResults(collected)
+  }, [selected, selStrats, availableSymbols, onScanComplete, executeTrade])
 
   const handleStop = () => { abortRef.current = true }
 
