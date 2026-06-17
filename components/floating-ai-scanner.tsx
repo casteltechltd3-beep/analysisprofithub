@@ -145,16 +145,54 @@ export function FloatingAIScanner({
   const [isDragging, setIsDragging] = useState(false)
   const dragStart = useRef({ x: 0, y: 0 })
   const positionStart = useRef({ x: 0, y: 0 })
+  const dragActiveRef = useRef(false)
+  const clickIgnoredRef = useRef(false)
 
   // Initialize position to bottom right once window is defined
   useEffect(() => {
     if (typeof window !== "undefined") {
       setPosition({
-        x: window.innerWidth - 440, // 420px width + 20px gap
-        y: window.innerHeight - 660  // 600px height + 60px gap
+        x: window.innerWidth - 120,
+        y: window.innerHeight - 120,
       })
     }
   }, [])
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return
+    dragActiveRef.current = true
+    clickIgnoredRef.current = false
+    dragStart.current = { x: e.clientX, y: e.clientY }
+    positionStart.current = { ...position }
+    setIsDragging(true)
+    e.currentTarget.setPointerCapture(e.pointerId)
+    window.addEventListener("pointermove", handlePointerMove)
+    window.addEventListener("pointerup", handlePointerUp)
+  }
+
+  const handlePointerMove = (e: PointerEvent) => {
+    if (!dragActiveRef.current) return
+    const dx = e.clientX - dragStart.current.x
+    const dy = e.clientY - dragStart.current.y
+    if (Math.abs(dx) + Math.abs(dy) > 6) {
+      clickIgnoredRef.current = true
+    }
+    setPosition({
+      x: Math.max(16, Math.min(window.innerWidth - 96, positionStart.current.x + dx)),
+      y: Math.max(16, Math.min(window.innerHeight - 96, positionStart.current.y + dy)),
+    })
+  }
+
+  const handlePointerUp = () => {
+    if (!dragActiveRef.current) return
+    dragActiveRef.current = false
+    setIsDragging(false)
+    window.removeEventListener("pointermove", handlePointerMove)
+    window.removeEventListener("pointerup", handlePointerUp)
+    if (!clickIgnoredRef.current && !isOpen) {
+      setIsOpen(true)
+    }
+  }
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return // Left click only
@@ -173,8 +211,8 @@ export function FloatingAIScanner({
       const dx = e.clientX - dragStart.current.x
       const dy = e.clientY - dragStart.current.y
       setPosition({
-        x: positionStart.current.x + dx,
-        y: positionStart.current.y + dy
+        x: Math.max(16, Math.min(window.innerWidth - 420, positionStart.current.x + dx)),
+        y: Math.max(16, Math.min(window.innerHeight - 600, positionStart.current.y + dy)),
       })
     }
 
@@ -311,16 +349,21 @@ export function FloatingAIScanner({
   return (
     <div 
       className="fixed z-[9999]"
-      style={!isOpen ? { bottom: "24px", right: "24px" } : { left: `${position.x}px`, top: `${position.y}px` }}
+      style={{ left: `${position.x}px`, top: `${position.y}px` }}
     >
       {!isOpen ? (
         <button
-          onClick={() => setIsOpen(true)}
+          onPointerDown={handlePointerDown}
           title="Open Pro AI Scanner"
-          className="rounded-full w-16 h-16 flex items-center justify-center shadow-2xl bg-gradient-to-br from-cyan-500 to-fuchsia-500 hover:from-cyan-400 hover:to-fuchsia-400 border border-cyan-300/40 transition-all hover:scale-110 active:scale-95"
-          style={{ boxShadow: "0 0 30px rgba(34,211,238,0.5), 0 0 16px rgba(236,72,153,0.35)" }}
+          className="relative rounded-full w-20 h-20 flex items-center justify-center shadow-[0_0_40px_rgba(249,115,22,0.35)] bg-gradient-to-br from-orange-400 via-rose-500 to-yellow-400 border border-orange-300/40 transition-all hover:scale-[1.05] active:scale-95"
+          style={{
+            boxShadow: "0 0 30px rgba(249,115,22,0.45), 0 0 18px rgba(251,191,36,0.25)",
+          }}
         >
-          <Cpu className="w-7 h-7 text-white animate-pulse" />
+          <span className="absolute inset-0 rounded-full bg-white/10 blur-xl opacity-80" />
+          <span className="relative flex items-center justify-center w-full h-full rounded-full text-xs font-black tracking-[0.35em] text-white uppercase">
+            AI
+          </span>
         </button>
       ) : (
         <Card 
@@ -337,7 +380,7 @@ export function FloatingAIScanner({
           {/* ── Header ── */}
           <div 
             onMouseDown={handleMouseDown}
-            className={`px-4 py-3 flex items-center justify-between border-b cursor-move select-none ${dark ? "border-white/5 bg-gradient-to-r from-violet-600/15 to-indigo-600/10" : "border-gray-200 bg-purple-50"}`}
+            className={`px-4 py-3 flex items-center justify-between border-b cursor-move select-none ${dark ? "border-white/5 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/15" : "border-gray-200 bg-gradient-to-r from-orange-50 to-pink-50"}`}
           >
             <div className="flex items-center gap-2">
               <Cpu className={`w-4 h-4 ${dark ? "text-cyan-300" : "text-fuchsia-500"}`} />
