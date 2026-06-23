@@ -22,6 +22,10 @@ import {
 } from 'lucide-react'
 import { ProfitPlusTradingLogic, TradeSignal, TradeResult } from '@/lib/profit-plus-trading-logic'
 import { DerivTradingService } from '@/lib/deriv-trading-service'
+import { TradingScannerEngine, ScanResult } from '@/lib/trading-scanner-engine'
+import { SmartTradeLoop, TradeExecution, LoopState } from '@/lib/smart-trade-loop'
+import { TradingScannerUI } from '@/components/trading-scanner-ui'
+import { AutoTradingModal } from '@/components/auto-trading-modal'
 
 interface TradeStats {
   strategy: string
