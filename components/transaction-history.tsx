@@ -1,82 +1,94 @@
-"use client"
+'use client'
+
+import React from 'react'
+import { Badge } from '@/components/ui/badge'
+import { History, TrendingUp, TrendingDown } from 'lucide-react'
 
 interface Transaction {
   id: string
-  contractType: string
   market: string
-  entrySpot: string
-  exitSpot: string
-  buyPrice: number
-  profitLoss: number
-  timestamp: number
-  status: "win" | "loss"
+  contract: string
+  stake: number
+  profit: number
+  result: 'win' | 'loss'
+  time: string
 }
 
-interface TransactionHistoryProps {
-  transactions: Transaction[]
-  theme: string
-  maxHeight?: string
-}
+export default function TransactionHistory() {
+  const transactions: Transaction[] = [
+    { id: '1', market: 'EURUSD', contract: 'Higher', stake: 100, profit: 150, result: 'win', time: '14:32:45' },
+    { id: '2', market: 'GBPUSD', contract: 'Lower', stake: 150, profit: -150, result: 'loss', time: '14:31:10' },
+    { id: '3', market: 'USDJPY', contract: 'Even', stake: 100, profit: 200, result: 'win', time: '14:30:22' },
+    { id: '4', market: 'AUDUSD', contract: 'Odd', stake: 80, profit: 160, result: 'win', time: '14:29:15' },
+    { id: '5', market: 'EURUSD', contract: 'Higher', stake: 120, profit: -120, result: 'loss', time: '14:28:30' },
+  ]
 
-export function TransactionHistory({ transactions, theme, maxHeight = "max-h-96" }: TransactionHistoryProps) {
   return (
-    <div
-      className={`p-4 rounded-lg border ${theme === "dark" ? "bg-[#0a0e27]/50 border-blue-500/20" : "bg-gray-50 border-gray-200"}`}
-    >
-      <h3 className={`text-sm font-bold mb-3 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-        Transaction History
-      </h3>
+    <div className="
+      glass-card rounded-2xl border border-slate-700/50
+      bg-gradient-to-br from-slate-900/50 via-slate-800/50 to-slate-900/50
+      backdrop-blur-xl p-6 shadow-2xl
+    ">
+      <div className="space-y-4">
+        <h3 className="font-bold text-slate-100 flex items-center gap-2">
+          <History className="w-5 h-5 text-slate-400" />
+          Recent Transactions
+        </h3>
 
-      {transactions.length > 0 ? (
-        <div className={`${maxHeight} overflow-y-auto space-y-2`}>
-          {transactions.map((tx) => (
-            <div
-              key={tx.id}
-              className={`p-3 rounded border text-xs ${theme === "dark" ? "bg-[#0f1629]/30 border-blue-500/20" : "bg-white border-gray-200"}`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <div className="font-bold">{tx.contractType}</div>
-                  <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>{tx.market}</div>
-                </div>
-                <div className={`font-bold ${tx.status === "win" ? "text-green-400" : "text-red-400"}`}>
-                  {tx.profitLoss >= 0 ? "+" : ""}${tx.profitLoss.toFixed(2)}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <span className={theme === "dark" ? "text-gray-500" : "text-gray-500"}>Entry:</span>
-                  <span className={`ml-1 font-mono ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                    {tx.entrySpot}
-                  </span>
-                </div>
-                <div>
-                  <span className={theme === "dark" ? "text-gray-500" : "text-gray-500"}>Exit:</span>
-                  <span className={`ml-1 font-mono ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                    {tx.exitSpot}
-                  </span>
-                </div>
-                <div>
-                  <span className={theme === "dark" ? "text-gray-500" : "text-gray-500"}>Stake:</span>
-                  <span className={`ml-1 font-mono ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                    ${tx.buyPrice.toFixed(2)}
-                  </span>
-                </div>
-                <div>
-                  <span className={theme === "dark" ? "text-gray-500" : "text-gray-500"}>Time:</span>
-                  <span className={`ml-1 font-mono ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                    {new Date(tx.timestamp * 1000).toLocaleTimeString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-700/50">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Time</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Market</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Contract</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Stake</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Result</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-400">P/L</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((tx) => (
+                <tr
+                  key={tx.id}
+                  className={`
+                    border-b border-slate-700/30 transition-colors
+                    ${tx.result === 'win'
+                      ? 'hover:bg-emerald-500/5'
+                      : 'hover:bg-red-500/5'
+                    }
+                  `}
+                >
+                  <td className="px-4 py-3 text-slate-300 font-mono">{tx.time}</td>
+                  <td className="px-4 py-3 text-slate-300 font-semibold">{tx.market}</td>
+                  <td className="px-4 py-3 text-slate-400">{tx.contract}</td>
+                  <td className="px-4 py-3 text-slate-300">${tx.stake}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {tx.result === 'win' ? (
+                        <>
+                          <TrendingUp className="w-4 h-4 text-emerald-400" />
+                          <Badge className="bg-emerald-500/30 text-emerald-300">Win</Badge>
+                        </>
+                      ) : (
+                        <>
+                          <TrendingDown className="w-4 h-4 text-red-400" />
+                          <Badge className="bg-red-500/30 text-red-300">Loss</Badge>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                  <td className={`px-4 py-3 text-right font-bold ${
+                    tx.profit > 0 ? 'text-emerald-400' : 'text-red-400'
+                  }`}>
+                    {tx.profit > 0 ? '+' : ''}{tx.profit}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ) : (
-        <p className={`text-xs text-center py-8 ${theme === "dark" ? "text-gray-500" : "text-gray-500"}`}>
-          No transactions yet
-        </p>
-      )}
+      </div>
     </div>
   )
 }
