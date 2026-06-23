@@ -114,23 +114,30 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
         setAnalysisProgress(85)
         console.log(`[v0] Market conditions met. Executing ${contractType} trade with stake ${roundedStake}`)
 
-        const buyRequest = {
-          buy: 1,
-          subscribe: 1,
+        // Build proposal request for real API
+        const proposalRequest = {
+          symbol: symbol || "1HZ100V",
           contract_type: contractType,
-          currency: "USD",
+          amount: roundedStake,
+          basis: "stake",
           duration: 5,
           duration_unit: "t",
-          symbol: "",
-          amount: roundedStake,
-          parameters: contractType === "DIGITDIFF" ? { digit_lower: digitValue } : { digit: digitValue },
+          currency: "USD",
         }
 
-        const response = await apiClient.call(buyRequest)
+        console.log("[v0] Requesting proposal:", proposalRequest)
+        const proposal = await apiClient.getProposal(proposalRequest)
+        console.log("[v0] Proposal received:", proposal.id)
+
+        // Buy the contract
+        const buyResponse = await apiClient.buyContract(proposal.id, proposal.ask_price)
+        console.log("[v0] Contract bought:", buyResponse.contract_id)
         setAnalysisProgress(100)
 
-        const isWin = response?.buy?.win || false
-        const profit = response?.buy?.payout ? response.buy.payout - roundedStake : 0
+        // Get contract result
+        const result = await apiClient.getContractResult(buyResponse.contract_id)
+        const isWin = result.status === "won"
+        const profit = isWin ? (buyResponse.payout - buyResponse.buy_price) : -buyResponse.buy_price
         const newPL = stats.pl + profit
 
         setStats((prev) => ({
