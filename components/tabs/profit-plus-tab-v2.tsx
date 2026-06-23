@@ -60,13 +60,7 @@ export function ProfitPlusTabV2({
     profit: 0,
     strategy: '',
   })
-  const [currentSignal, setCurrentSignal] = useState<any>({
-    strategy: 'Over/Under',
-    power: 0.78,
-    probability: 0.82,
-    entryPoint: 'OVER',
-    marketZone: 'UPPER_BOUND',
-  })
+  const [currentSignal, setCurrentSignal] = useState<any>(null)
   const [notification, setNotification] = useState<{
     message: string
     type: 'green' | 'blue' | 'yellow'
