@@ -7,6 +7,7 @@ import { Bell, TrendingUp, AlertCircle, CheckCircle, Zap } from 'lucide-react'
 import { ProfitPlusEngine } from '@/lib/profit-plus-engine'
 import { ProfitPlusAutoTrading } from '@/lib/profit-plus-auto-trading'
 import { submitTradeResult, formatTradeForSubmission } from '@/lib/trade-result-submitter'
+import { TradeResultCard } from '@/components/trade-result-card'
 import styles from './profit-plus-v2.module.css'
 
 interface Analysis {
@@ -48,7 +49,24 @@ export function ProfitPlusTabV2({
   const [maxStakePercent, setMaxStakePercent] = useState(20)
   const [excludedDigits, setExcludedDigits] = useState<number[]>([])
   const [tradeHistory, setTradeHistory] = useState<any[]>([])
-  const [currentSignal, setCurrentSignal] = useState<any>(null)
+  const [resultCard, setResultCard] = useState<{
+    isVisible: boolean
+    isWin: boolean
+    profit: number
+    strategy: string
+  }>({
+    isVisible: false,
+    isWin: false,
+    profit: 0,
+    strategy: '',
+  })
+  const [currentSignal, setCurrentSignal] = useState<any>({
+    strategy: 'Over/Under',
+    power: 0.78,
+    probability: 0.82,
+    entryPoint: 'OVER',
+    marketZone: 'UPPER_BOUND',
+  })
   const [notification, setNotification] = useState<{
     message: string
     type: 'green' | 'blue' | 'yellow'
@@ -162,10 +180,22 @@ export function ProfitPlusTabV2({
 
     setTradeHistory([trade, ...tradeHistory.slice(0, 9)])
 
+    // Show result card
+    setResultCard({
+      isVisible: true,
+      isWin: result.isWin,
+      profit: result.profit || 0,
+      strategy: currentSignal.strategy,
+    })
+
     if (result.isWin) {
       showNotification(`Win! +$${Math.abs(result.profit || 0).toFixed(2)}`, 'green')
+      setStatusColor('green')
+      setStatusText('Take Profit Reached!')
     } else {
       showNotification(`Loss! -$${Math.abs(result.profit || 0).toFixed(2)}`, 'blue')
+      setStatusColor('yellow')
+      setStatusText('Stop Loss Triggered')
     }
 
     // Post to API
@@ -419,7 +449,7 @@ export function ProfitPlusTabV2({
             <div className={styles.signalBox} style={{ marginTop: '24px' }}>
               <div className={styles.signalLabel}>Auto Trading</div>
               <div className={styles.signalValue} style={{ fontSize: '16px', color: isAutoTrading ? '#22c55e' : '#94a3b8' }}>
-                {isAutoTrading ? '🟢 ACTIVE' : '⚪ PAUSED'}
+                {isAutoTrading ? '��� ACTIVE' : '⚪ PAUSED'}
               </div>
             </div>
           </div>
@@ -461,6 +491,16 @@ export function ProfitPlusTabV2({
           )}
         </div>
       </div>
+
+      {/* Trade Result Card */}
+      <TradeResultCard
+        isVisible={resultCard.isVisible}
+        isWin={resultCard.isWin}
+        profit={resultCard.profit}
+        strategy={resultCard.strategy}
+        onClose={() => setResultCard({ ...resultCard, isVisible: false })}
+        autoCloseDelay={4000}
+      />
 
       {/* Notification */}
       {notification && (
