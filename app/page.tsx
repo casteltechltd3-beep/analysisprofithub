@@ -34,6 +34,7 @@ import { AutoBotTab } from "@/components/tabs/autobot-tab"
 import { AutomatedTab } from "@/components/tabs/automated-tab"
 import { SmartAuto24Tab } from "@/components/tabs/smartauto24-tab"
 import { ProfitPlusTabV2 } from "@/components/tabs/profit-plus-tab-v2"
+import { ProfitPlusRebuild } from "@/components/tabs/profit-plus-rebuild"
 import { AdvancedSignalsTab } from "@/components/advanced-signals-tab"
 import { useGlobalTradingContext } from "@/hooks/use-global-trading-context"
 import { verifier } from "@/lib/system-verifier"
@@ -802,18 +803,7 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
               <TabsContent value="profit-plus" className="mt-0">
-                {analysis && currentPrice && (
-                  <ProfitPlusTabV2
-                    analysis={analysis}
-                    currentDigit={currentDigit}
-                    currentPrice={currentPrice}
-                    recentDigits={recent50Digits}
-                    theme={theme}
-                    symbol={symbol}
-                    balance={10000}
-                    token=""
-                  />
-                )}
+                <ProfitPlusRebuild />
               </TabsContent>
 
               <TabsContent value="money-maker" className="mt-0">
