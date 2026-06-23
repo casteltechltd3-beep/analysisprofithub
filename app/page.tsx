@@ -19,6 +19,7 @@ import { SignalsTab } from "@/components/tabs/signals-tab"
 import { ProSignalsTab } from "@/components/tabs/pro-signals-tab"
 import { EvenOddTab } from "@/components/tabs/even-odd-tab"
 import { OverUnderTab } from "@/components/tabs/over-under-tab"
+import { MoneyMakerTab as AdvancedOverUnderTab } from "@/components/tabs/advanced-over-under-tab"
 import { MatchesTab } from "@/components/tabs/matches-tab"
 import { DiffersTab } from "@/components/tabs/differs-tab"
 import { StatisticalAnalysis } from "@/components/statistical-analysis"
@@ -743,7 +744,12 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
               <TabsContent value="advanced-over-under" className="mt-0">
-                {analysis && <MoneyMakerTab theme={theme} recentDigits={recent50Digits} symbol={symbol} />}
+                {analysis && (
+                  <AdvancedOverUnderTab
+                    theme={theme}
+                    recentDigits={recent50Digits}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="matches" className="mt-0">
